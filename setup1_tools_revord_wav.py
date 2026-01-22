@@ -1,38 +1,51 @@
 import pyaudio
 import wave
+import os
 
 # 配置
 FILENAME = "test_audio.wav"
-CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
+CHUNK = 1024
+RECORD_SECONDS = 5  # 录 5 秒
 
-def record_audio():
+def main():
+    # 如果旧文件存在，先删除
+    if os.path.exists(FILENAME):
+        os.remove(FILENAME)
+
     p = pyaudio.PyAudio()
-    stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-    
-    print("🎙️  按住回车开始录音，松开回车不会停... 哎呀命令行做不到按住。")
-    print(f"🎙️  正在录音 (5秒后自动停止)... 请说话！")
-    
+
+    print("---------------------------------------")
+    print(f"🎙️  准备录音... (请说话 {RECORD_SECONDS} 秒)")
+    print("---------------------------------------")
+
+    stream = p.open(format=FORMAT,
+                    channels=CHANNELS,
+                    rate=RATE,
+                    input=True,
+                    frames_per_buffer=CHUNK)
+
     frames = []
-    for _ in range(0, int(RATE / CHUNK * 5)):
+
+    for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
         data = stream.read(CHUNK)
         frames.append(data)
-        
-    print("🛑 录音结束")
-    
+
+    print("🛑 录音结束，正在保存...")
+
     stream.stop_stream()
     stream.close()
     p.terminate()
-    
+
     with wave.open(FILENAME, 'wb') as wf:
         wf.setnchannels(CHANNELS)
         wf.setsampwidth(p.get_sample_size(FORMAT))
         wf.setframerate(RATE)
         wf.writeframes(b''.join(frames))
-    
-    print(f"✅ 已保存真实语音到: {FILENAME}")
+
+    print(f"✅ 生成成功: {FILENAME} (标准 WAV 格式)")
 
 if __name__ == "__main__":
-    record_audio()
+    main()
