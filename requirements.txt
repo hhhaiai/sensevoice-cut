@@ -1,0 +1,17 @@
+# 核心推理引擎
+funasr_onnx>=0.1.0
+# 如果你有 NVIDIA 显卡，请使用 onnxruntime-gpu，否则使用默认的 CPU 版本
+onnxruntime>=1.14.0
+
+# Web 服务框架 (用于 Server 端)
+fastapi>=0.95.0
+uvicorn>=0.22.0
+python-multipart>=0.0.6
+
+# 客户端请求与音频处理
+requests>=2.28.0
+numpy>=1.23.0
+soundfile>=0.12.1
+
+# 麦克风录音支持 (注意：Mac需先 brew install portaudio，Linux需 apt install portaudio19-dev)
+pyaudio>=0.2.13
