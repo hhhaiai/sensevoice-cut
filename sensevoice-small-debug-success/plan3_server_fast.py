@@ -2,12 +2,15 @@ import uvicorn
 import time
 import numpy as np
 import os
+import re
 from fastapi import FastAPI, Request
 from funasr_onnx import SenseVoiceSmall
 
 app = FastAPI()
 
 MODEL_PATH = "sensevoice-small"
+DEFAULT_USE_ITN = True
+TAG_PATTERN = re.compile(r"<\|.*?\|>")
 
 print("🚀 [1/3] 正在加载模型...")
 
@@ -38,8 +41,27 @@ model = SenseVoiceSmall(model_dir=MODEL_PATH, quantize=False, intra_op_num_threa
 
 print("🔥 [2/3] 预热模型...")
 dummy = np.zeros(16000, dtype=np.float32)
-model(dummy, language="auto", use_itn=False)
+warmup_textnorm = "withitn" if DEFAULT_USE_ITN else "woitn"
+model(dummy, language="auto", textnorm=warmup_textnorm)
 print("✅ [3/3] 服务就绪 (Port: 8008)")
+
+
+def str_to_bool(value: str) -> bool:
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def pick_textnorm(request: Request) -> str:
+    textnorm = request.query_params.get("textnorm", "").strip().lower()
+    if textnorm in {"withitn", "woitn"}:
+        return textnorm
+    use_itn_raw = request.query_params.get("use_itn")
+    if use_itn_raw is not None:
+        return "withitn" if str_to_bool(use_itn_raw) else "woitn"
+    return "withitn" if DEFAULT_USE_ITN else "woitn"
+
+
+def clean_text(text: str) -> str:
+    return TAG_PATTERN.sub("", text).strip()
 
 @app.post("/transcribe_stream")
 async def transcribe_stream(request: Request):
@@ -58,16 +80,19 @@ async def transcribe_stream(request: Request):
         audio_duration = len(audio_float32) / 16000.0
 
         # 推理
-        res = model(audio_float32, language="auto", use_itn=False)
+        textnorm = pick_textnorm(request)
+        res = model(audio_float32, language="auto", textnorm=textnorm)
         
         t_end = time.time()
         inference_time = t_end - t_start
         
         # 结果处理
         text = res[0] if isinstance(res, list) else str(res)
+        text = clean_text(text)
         
         return {
             "text": text,
+            "textnorm": textnorm,
             "latency_ms": int(inference_time * 1000),
             "audio_duration": audio_duration,
             "rtf": round(inference_time / audio_duration, 4) if audio_duration > 0 else 0

@@ -6,6 +6,7 @@ import re
 
 # --- 配置 ---
 SERVER_URL = "http://127.0.0.1:8008/transcribe_stream"
+USE_ITN = True  # 开启 withitn 更容易输出数字/符号格式
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -68,6 +69,7 @@ class SafeAudioRecorder:
             resp = requests.post(
                 SERVER_URL, 
                 data=audio_data,
+                params={"use_itn": str(USE_ITN).lower()},
                 headers={"Content-Type": "application/octet-stream"}
             )
             t1 = time.time()
@@ -80,6 +82,7 @@ class SafeAudioRecorder:
                 server_ms = data.get('latency_ms', 0)
                 audio_dur = data.get('audio_duration', 0.1)
                 rtf = data.get('rtf', 0)
+                textnorm = data.get('textnorm', 'withitn' if USE_ITN else 'woitn')
                 total_ms = (t1 - t0) * 1000
                 
                 # 计算指标
@@ -90,6 +93,7 @@ class SafeAudioRecorder:
                 print(f"📝 识别内容: {clean_text}")
                 print("-" * 50)
                 print(f"📊 性能量化指标:")
+                print(f"   🧾  文本规范: {textnorm}")
                 print(f"   🗣️  语音时长: {audio_dur:.2f} 秒")
                 print(f"   ⚡  系统耗时: {server_ms} ms (网络+总耗时: {total_ms:.1f} ms)")
                 print(f"   🚀  RTF(实时率): {rtf:.4f} (比说话快 {speed_ratio:.1f} 倍)")
