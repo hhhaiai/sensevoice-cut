@@ -4,6 +4,7 @@
 [![SenseVoice](https://img.shields.io/badge/Model-SenseVoiceSmall-green)](https://github.com/FunAudioLLM/SenseVoice)
 [![Performance](https://img.shields.io/badge/Latency-Milliseconds-red)](https://github.com/FunAudioLLM/SenseVoice)
 
+
 这是一个基于 **SenseVoiceSmall** 的高性能本地语音识别系统。
 
 本项目的核心目标是 **极致的响应速度**。通过移除所有不必要的磁盘 I/O，采用 **Raw PCM 内存流（Memory-to-Memory）** 传输技术，实现了**毫秒级**的语音转文字响应。
